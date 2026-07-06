@@ -9,6 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="Scoring Tracker">
 <meta name="theme-color" content="#1c1c1c">
 <meta name="format-detection" content="telephone=no">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Scoring Practice Tracker</title>
 <style>
   :root {
@@ -45,16 +48,12 @@
     align-items: center;
     gap: 12px;
   }
-  header.top .dots {
-    display: grid;
-    grid-template-columns: repeat(3, 8px);
-    gap: 4px;
+  header.top .app-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: block;
   }
-  header.top .dots span {
-    width: 8px; height: 8px; border-radius: 50%;
-    border: 1px solid #fff;
-  }
-  header.top .dots span.filled { background: #fff; }
   header.top h1 {
     font-size: 18px;
     letter-spacing: 1px;
@@ -345,11 +344,7 @@
 
 <header class="top">
   <div class="brand">
-    <div class="dots">
-      <span class="filled"></span><span></span><span class="filled"></span>
-      <span></span><span class="filled"></span><span></span>
-      <span></span><span class="filled"></span><span></span>
-    </div>
+    <img src="icon.svg" alt="" class="app-icon">
     <h1>Scoring Practice Tracker<small>Free companion tool &middot; inspired by The Scoring Method</small></h1>
   </div>
   <nav class="tabs">
