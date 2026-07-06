@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scoring Practice Tracker</title>
+<style>
+  :root {
+    --ink: #1c1c1c;
+    --paper: #fafaf8;
+    --line: #1c1c1c;
+    --accent: #1c6b4a;
+    --accent-red: #b6412e;
+    --muted: #6b6b66;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    background: #eeece6;
+    color: var(--ink);
+  }
+  header.top {
+    background: var(--ink);
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  header.top .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header.top .dots {
+    display: grid;
+    grid-template-columns: repeat(3, 8px);
+    gap: 4px;
+  }
+  header.top .dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 1px solid #fff;
+  }
+  header.top .dots span.filled { background: #fff; }
+  header.top h1 {
+    font-size: 18px;
+    letter-spacing: 1px;
+    margin: 0;
+    text-transform: uppercase;
+  }
+  header.top h1 small {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #ccc;
+    font-weight: normal;
+  }
+  nav.tabs {
+    display: flex;
+    gap: 4px;
+  }
+  nav.tabs button {
+    background: transparent;
+    border: 1px solid #555;
+    color: #ddd;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+  nav.tabs button.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  main {
+    max-width: 980px;
+    margin: 24px auto;
+    padding: 0 16px 60px;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .meta-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .meta-row label {
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .meta-row input[type=text], .meta-row input[type=date] {
+    border: none;
+    border-bottom: 1px solid #333;
+    font-size: 16px;
+    padding: 4px 2px;
+    background: transparent;
+    min-width: 220px;
+  }
+  .instructions {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 10px 0 18px;
+  }
+  .instructions b { color: var(--ink); }
+
+  .drill {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .drill-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f2f1ea;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .drill-head h3 {
+    margin: 0;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .drill-head .target-fields {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+  .drill-head input[type=number] {
+    width: 56px;
+    padding: 3px 4px;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+  .drill-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px;
+    align-items: flex-start;
+  }
+  .attempts {
+    display: grid;
+    grid-template-columns: repeat(8, 40px);
+    gap: 6px;
+  }
+  .attempts input {
+    width: 40px;
+    height: 40px;
+    text-align: center;
+    font-size: 15px;
+    border: 1px solid #999;
+    border-radius: 4px;
+  }
+  .results {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .result-box {
+    text-align: center;
+    min-width: 56px;
+  }
+  .result-box .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+  .result-box .value {
+    font-size: 20px;
+    font-weight: bold;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 4px 0;
+  }
+  .result-box.pp .value {
+    background: #f2f1ea;
+    font-size: 16px;
+  }
+  .status-pass .value { color: var(--accent); border-color: var(--accent); }
+  .status-fail .value { color: var(--accent-red); border-color: var(--accent-red); }
+  .notes {
+    flex: 1;
+    min-width: 200px;
+  }
+  .notes textarea {
+    width: 100%;
+    min-height: 44px;
+    font-size: 13px;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit;
+    resize: vertical;
+  }
+  .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  button.primary, button.secondary {
+    padding: 10px 18px;
+    border-radius: 5px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+  button.primary { background: var(--accent); color: #fff; }
+  button.secondary { background: #fff; color: var(--ink); border: 1px solid #999; }
+  button.danger { background: #fff; color: var(--accent-red); border: 1px solid var(--accent-red); }
+
+  table.history {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.history th, table.history td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  table.history th { background: #f2f1ea; }
+  table.history tr:hover { background: #fafafa; cursor: pointer; }
+  .empty-state {
+    color: var(--muted);
+    font-style: italic;
+    padding: 20px 0;
+  }
+
+  .guide h2 { margin-top: 0; }
+  .guide h3 { margin-bottom: 4px; }
+  .guide .disclaimer {
+    background: #fff8e6;
+    border: 1px solid #e5cf7d;
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .guide .drill-guide {
+    border-left: 3px solid var(--accent);
+    padding-left: 12px;
+    margin-bottom: 18px;
+  }
+  .guide ul { padding-left: 20px; }
+  .guide .zone-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 18px;
+    font-size: 13px;
+  }
+  .guide .zone-table th, .guide .zone-table td {
+    border: 1px solid #ddd;
+    padding: 6px 10px;
+  }
+  .guide .zone-table th { background: #f2f1ea; text-align: left; }
+  .guide .sources {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 30px;
+    border-top: 1px solid #ddd;
+    padding-top: 12px;
+  }
+  .guide .sources a { color: var(--muted); }
+  .pill {
+    display: inline-block;
+    background: var(--ink);
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  @media print {
+    header.top, nav.tabs, .actions, #history-tab, .guide { display: none !important; }
+    body { background: #fff; }
+    .card { box-shadow: none; border: 1px solid #000; }
+  }
+
+  @media (max-width: 600px) {
+    .attempts { grid-template-columns: repeat(4, 40px); }
+    header.top { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="dots">
+      <span class="filled"></span><span></span><span class="filled"></span>
+      <span></span><span class="filled"></span><span></span>
+      <span></span><span class="filled"></span><span></span>
+    </div>
+    <h1>Scoring Practice Tracker<small>Free companion tool &middot; inspired by The Scoring Method</small></h1>
+  </div>
+  <nav class="tabs">
+    <button data-tab="scorecard" class="active">Scorecard</button>
+    <button data-tab="history">History</button>
+    <button data-tab="guide">Guide</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- SCORECARD -->
+  <section id="scorecard-tab" class="panel active">
+    <div class="card">
+      <div class="meta-row">
+        <div>
+          <label>Name</label>
+          <input type="text" id="playerName" placeholder="Your name">
+        </div>
+        <div>
+          <label>Date</label>
+          <input type="date" id="sessionDate">
+        </div>
+      </div>
+      <p class="instructions">
+        <b>Target score</b> — the score you're aiming to beat in each drill.
+        <b>#PP</b> — number of times to complete purposeful practice on that drill before your next round; use the notes box to jot feedback from your last round.
+      </p>
+
+      <div id="drills"></div>
+
+      <div class="actions">
+        <button class="primary" id="saveSessionBtn">Save Session</button>
+        <button class="secondary" id="clearFormBtn">Clear Form</button>
+        <button class="secondary" id="printBtn">Print / Save PDF</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="history-tab" class="panel">
+    <div class="card">
+      <h2 style="margin-top:0;">Practice History</h2>
+      <div id="historyContent"></div>
+    </div>
+  </section>
+
+  <!-- GUIDE -->
+  <section id="guide-tab" class="panel">
+    <div class="card guide">
+      <h2>Guide: The Scoring Method &amp; Practice Tips</h2>
+      <div class="disclaimer">
+        <b>Independent, unofficial companion tool.</b> This app is a free, fan-built tracker inspired by publicly
+        available ideas from Will Robins, PGA, creator of <em>The Scoring Method&trade;</em>. It is not affiliated
+        with, endorsed by, or built from the paid coaching program. For the full coaching system, certified
+        coaches, and personalized targets, see the official links at the bottom of this page.
+      </div>
+
+      <h3>The big idea</h3>
+      <p>
+        Will Robins started coaching in 2008 and noticed most students asked him to fix their swing so they could
+        hit it farther &mdash; but what they actually wanted was to shoot lower scores. That gap became The Scoring
+        Method: a course-management-first approach that tells you what club to hit, where to hit it, and exactly
+        how to practice the parts of your game that are actually costing you strokes. The core philosophy is
+        simple: <b>keep the big numbers off the scorecard first</b>, then worry about swing technique.
+      </p>
+
+      <h3>The five practice categories on your card</h3>
+      <div class="drill-guide">
+        <h4>1 Putt Circle &mdash; short putts <span class="pill">PP 1</span></h4>
+        <p>Putts from a set distance where 1-putt should be the expectation. Set your own target distance
+        (e.g. 3&ndash;5 ft) and target score (e.g. 8 putts for 8 balls = 100% one-putt), then log each attempt.</p>
+      </div>
+      <div class="drill-guide">
+        <h4>2 Putt Circle &mdash; long putts <span class="pill">PP 2</span></h4>
+        <p>Lag putts from farther out where the realistic goal is a stress-free 2-putt. Track how often you leave
+        yourself a tough second putt, not just whether you made it.</p>
+      </div>
+      <div class="drill-guide">
+        <h4>3 Shot Circle &mdash; chipping <span class="pill">PP B</span></h4>
+        <p>Up-and-down practice inside roughly 25 yards of the green. Robins' own tracking advice: log the
+        distance of your first putt after each chip &mdash; if you're regularly leaving 12&ndash;15 footers from
+        inside 25 yards, that's the leak, not your putter.</p>
+      </div>
+      <div class="drill-guide">
+        <h4>3 Shot Scoring Zone &mdash; wedges <span class="pill">PP B</span></h4>
+        <p>Full-swing wedge shots (roughly 25&ndash;100 yards from the green) where the target is proximity, not
+        just "on the green." Set a target yardage from the green you should be beating consistently.</p>
+      </div>
+      <div class="drill-guide">
+        <h4>Go To Club <span class="pill">PP A</span></h4>
+        <p>Your reliable off-the-tee or approach club: the one that keeps the ball in the fairway width you set,
+        even if it isn't your longest option. The goal isn't distance &mdash; it's eliminating penalty strokes and
+        blow-up holes.</p>
+      </div>
+
+      <h3>Track proximity by zone, not just putts</h3>
+      <p>One of Robins' clearest diagnostic tips: log the distance of your first putt on every hole for a full
+      round (or several), then average it by which zone your approach shot came from. It tells you where your
+      strokes are really going before you blame your putting.</p>
+      <table class="zone-table">
+        <tr><th>Zone</th><th>Distance from green</th></tr>
+        <tr><td>Chipping</td><td>Inside 25 yards</td></tr>
+        <tr><td>Pitching</td><td>Inside 50 yards</td></tr>
+        <tr><td>Wedge shots</td><td>Inside 100 yards</td></tr>
+        <tr><td>Iron shots</td><td>Inside 150 yards</td></tr>
+      </table>
+
+      <h3>Minimize blow-up holes first</h3>
+      <p>Before refining any of the drills above, Robins recommends a simple course-management filter: keep the
+      ball in play at all costs. Homework: play 18 holes (then build to 72) with zero penalty strokes, even if that
+      means leaving driver in the bag. Fewer double-and-worse holes lowers your average score faster than any
+      swing change.</p>
+
+      <h3>Commit to every shot</h3>
+      <p>Scoring is as much mental as mechanical. After each shot, rate your commitment from 1&ndash;10 &mdash; did
+      you fully visualize the shot before you hit it, or were you still deciding over the ball? Low commitment
+      scores are often a bigger cause of bad shots than swing faults.</p>
+
+      <h3>Official resources</h3>
+      <ul>
+        <li><a href="https://thescoringmethod.com/" target="_blank" rel="noopener">thescoringmethod.com</a> &mdash; official program site</li>
+        <li><a href="https://www.willrobins.com/the-scoring-method" target="_blank" rel="noopener">willrobins.com/the-scoring-method</a></li>
+        <li><a href="https://thescoringmethod.com/strategies-to-try-while-golfing-this-week/" target="_blank" rel="noopener">Strategies to try while golfing this week</a></li>
+        <li><a href="https://thescoringmethod.golfcoachingsystem.com/coaches/444" target="_blank" rel="noopener">Find a certified Scoring Method coach</a></li>
+        <li><a href="https://18strong.com/will-robins/" target="_blank" rel="noopener">18STRONG podcast: Will Robins on the Scoring Method</a></li>
+      </ul>
+      <div class="sources">
+        Content in this guide is paraphrased from public articles and interviews for educational use. All rights
+        to The Scoring Method&trade; name, system, and full curriculum belong to Will Robins / RGX Coach.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const DRILLS = [
+  { key: 'putt1', title: '1 Putt Circle - Short Putts', unit: 'FEET FROM HOLE', pp: '1', lowerBetter: true },
+  { key: 'putt2', title: '2 Putt Circle - Long Putts', unit: 'FEET FROM HOLE', pp: '2', lowerBetter: true },
+  { key: 'chip3', title: '3 Shot Circle - Chipping', unit: 'YARDS FROM HOLE', pp: 'B', lowerBetter: true },
+  { key: 'wedge3', title: '3 Shot Scoring Zone - Wedges', unit: 'YARDS FROM GREEN', pp: 'B', lowerBetter: true },
+  { key: 'gotoclub', title: 'Go To Club', unit: null, pp: 'A', lowerBetter: false, isGoToClub: true },
+];
+
+const STORAGE_KEY = 'scoringMethodSessions';
+
+function emptySession() {
+  const rows = {};
+  DRILLS.forEach(d => {
+    rows[d.key] = {
+      target: '',
+      unitValue: '',
+      minWidth: '',
+      attempts: Array(8).fill(''),
+      notes: ''
+    };
+  });
+  return {
+    id: Date.now().toString(),
+    name: '',
+    date: new Date().toISOString().slice(0,10),
+    rows
+  };
+}
+
+let current = emptySession();
+
+function loadSessions() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch (e) { return []; }
+}
+
+function saveSessions(sessions) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+}
+
+function renderDrills() {
+  const container = document.getElementById('drills');
+  container.innerHTML = DRILLS.map(d => {
+    const row = current.rows[d.key];
+    const attemptsHtml = row.attempts.map((val, i) =>
+      `<input type="number" inputmode="numeric" data-drill="${d.key}" data-idx="${i}" value="${val}" class="attempt-input">`
+    ).join('');
+
+    const targetFieldsHtml = d.isGoToClub
+      ? `
+        <label>Target <input type="number" data-drill="${d.key}" data-field="target" value="${row.target}"> total yards</label>
+        <label>Minimum <input type="number" data-drill="${d.key}" data-field="minWidth" value="${row.minWidth}"> yd fairway width</label>
+      `
+      : `
+        <label>Target <input type="number" data-drill="${d.key}" data-field="target" value="${row.target}"></label>
+        <label><input type="number" data-drill="${d.key}" data-field="unitValue" value="${row.unitValue}" style="width:48px"> ${d.unit}</label>
+      `;
+
+    return `
+    <div class="drill" data-drill-key="${d.key}">
+      <div class="drill-head">
+        <h3>${d.title}</h3>
+        <div class="target-fields">${targetFieldsHtml}</div>
+      </div>
+      <div class="drill-body">
+        <div class="attempts">${attemptsHtml}</div>
+        <div class="results">
+          <div class="result-box total-box">
+            <div class="label">Total</div>
+            <div class="value" id="total-${d.key}">0</div>
+          </div>
+          <div class="result-box target-box">
+            <div class="label">Target</div>
+            <div class="value" id="targetdisp-${d.key}">${row.target || '-'}</div>
+          </div>
+          <div class="result-box pp">
+            <div class="label">#PP</div>
+            <div class="value">${d.pp}</div>
+          </div>
+        </div>
+        <div class="notes">
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;">Notes / last round feedback</label>
+          <textarea data-drill="${d.key}" data-field="notes" placeholder="e.g. missed right on 3-footers, review setup">${row.notes}</textarea>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  attachDrillListeners();
+  DRILLS.forEach(d => updateTotal(d.key));
+}
+
+function attachDrillListeners() {
+  document.querySelectorAll('.attempt-input').forEach(el => {
+    el.addEventListener('input', e => {
+      const { drill, idx } = e.target.dataset;
+      current.rows[drill].attempts[idx] = e.target.value;
+      updateTotal(drill);
+    });
+  });
+  document.querySelectorAll('[data-field]').forEach(el => {
+    el.addEventListener('input', e => {
+      const { drill, field } = e.target.dataset;
+      if (!drill) return;
+      current.rows[drill][field] = e.target.value;
+      if (field === 'target') {
+        document.getElementById(`targetdisp-${drill}`).textContent = e.target.value || '-';
+        updateTotal(drill);
+      }
+    });
+  });
+}
+
+function updateTotal(key) {
+  const row = current.rows[key];
+  const sum = row.attempts.reduce((acc, v) => acc + (parseFloat(v) || 0), 0);
+  const totalEl = document.getElementById(`total-${key}`);
+  totalEl.textContent = sum;
+
+  const drillDef = DRILLS.find(d => d.key === key);
+  const box = totalEl.closest('.total-box');
+  box.classList.remove('status-pass', 'status-fail');
+  const target = parseFloat(row.target);
+  if (!isNaN(target) && row.attempts.some(v => v !== '')) {
+    const pass = drillDef.lowerBetter ? sum <= target : sum >= target;
+    box.classList.add(pass ? 'status-pass' : 'status-fail');
+  }
+}
+
+function collectMeta() {
+  current.name = document.getElementById('playerName').value;
+  current.date = document.getElementById('sessionDate').value;
+}
+
+function renderMeta() {
+  document.getElementById('playerName').value = current.name || '';
+  document.getElementById('sessionDate').value = current.date || new Date().toISOString().slice(0,10);
+}
+
+// Tabs
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`${btn.dataset.tab}-tab`).classList.add('active');
+    if (btn.dataset.tab === 'history') renderHistory();
+  });
+});
+
+document.getElementById('playerName').addEventListener('input', collectMeta);
+document.getElementById('sessionDate').addEventListener('input', collectMeta);
+
+document.getElementById('saveSessionBtn').addEventListener('click', () => {
+  collectMeta();
+  if (!current.name) {
+    alert('Add a name before saving.');
+    return;
+  }
+  const sessions = loadSessions();
+  const idx = sessions.findIndex(s => s.id === current.id);
+  if (idx >= 0) sessions[idx] = current; else sessions.push(current);
+  saveSessions(sessions);
+  alert('Session saved.');
+});
+
+document.getElementById('clearFormBtn').addEventListener('click', () => {
+  if (!confirm('Clear the current form? Unsaved changes will be lost.')) return;
+  current = emptySession();
+  renderMeta();
+  renderDrills();
+});
+
+document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+function renderHistory() {
+  const sessions = loadSessions().slice().sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+  const el = document.getElementById('historyContent');
+  if (!sessions.length) {
+    el.innerHTML = '<p class="empty-state">No saved sessions yet. Fill out the Scorecard tab and click "Save Session".</p>';
+    return;
+  }
+  const rowsHtml = sessions.map(s => {
+    const totals = DRILLS.map(d => {
+      const row = s.rows[d.key];
+      const sum = row.attempts.reduce((acc, v) => acc + (parseFloat(v) || 0), 0);
+      return `${d.pp}:${sum}`;
+    }).join(' &nbsp; ');
+    return `<tr data-id="${s.id}">
+      <td>${s.date || ''}</td>
+      <td>${s.name || ''}</td>
+      <td>${totals}</td>
+      <td><button class="secondary load-btn" data-id="${s.id}">Load</button>
+          <button class="danger delete-btn" data-id="${s.id}">Delete</button></td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `
+    <table class="history">
+      <thead><tr><th>Date</th><th>Name</th><th>Totals (PP:score)</th><th>Actions</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+
+  el.querySelectorAll('.load-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sessions = loadSessions();
+      const s = sessions.find(x => x.id === btn.dataset.id);
+      if (!s) return;
+      current = s;
+      renderMeta();
+      renderDrills();
+      document.querySelector('nav.tabs button[data-tab="scorecard"]').click();
+    });
+  });
+  el.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Delete this session?')) return;
+      const sessions = loadSessions().filter(x => x.id !== btn.dataset.id);
+      saveSessions(sessions);
+      renderHistory();
+    });
+  });
+}
+
+renderMeta();
+renderDrills();
+</script>
+
+</body>
+</html>
