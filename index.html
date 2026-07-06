@@ -788,10 +788,12 @@ function buildSummaryCanvas() {
   const cardH = cardPad * 2 + headerH + DRILLS.length * rowH + footerH;
   const height = cardH + padding * 2;
 
+  const exportScale = 3;
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = width * exportScale;
+  canvas.height = height * exportScale;
   const ctx = canvas.getContext('2d');
+  ctx.scale(exportScale, exportScale);
 
   ctx.fillStyle = paper;
   ctx.fillRect(0, 0, width, height);
