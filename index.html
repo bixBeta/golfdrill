@@ -372,7 +372,7 @@
   table.hole-table {
     border-collapse: collapse;
     font-size: 12px;
-    min-width: 620px;
+    min-width: 760px;
   }
   table.hole-table th, table.hole-table td {
     border: 1px solid #ccc;
@@ -398,6 +398,23 @@
     border: none;
     text-align: center;
     font-size: 14px;
+    padding: 4px 0;
+  }
+  .hole-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+  .hole-cell input.hole-num {
+    width: 24px;
+  }
+  .hole-cell select.hole-mark {
+    width: 30px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    text-align: center;
     padding: 4px 0;
   }
   table.hole-table .row-c {
@@ -734,12 +751,13 @@ const FONT_STACK = '"Helvetica Neue", Arial, sans-serif';
 const HOLES_FRONT = [1,2,3,4,5,6,7,8,9];
 const HOLES_BACK = [10,11,12,13,14,15,16,17,18];
 const ROUND_ROWS = [
-  { code: 'A', label: 'Entering Scoring Zone', field: 'a' },
-  { code: 'B', label: 'Down in Scoring Zone', field: 'b' },
-  { code: 'C', label: 'Score (A+B)', field: null },
-  { code: '1', label: 'Putts Made', field: 'p1' },
-  { code: '2', label: 'Total Putts', field: 'p2' },
+  { code: 'A', label: 'Entering Scoring Zone', field: 'a', markField: 'aMark' },
+  { code: 'B', label: 'Down in Scoring Zone', field: 'b', markField: 'bMark' },
+  { code: 'C', label: 'Score (A+B)', field: null, markField: null },
+  { code: '1', label: 'Putts Made', field: 'p1', markField: null },
+  { code: '2', label: 'Total Putts', field: 'p2', markField: null },
 ];
+const MARK_OPTIONS = ['', '✓', '✗', '○'];
 
 const ROUND_STORAGE_KEY = 'scoringMethodRounds';
 
@@ -750,7 +768,7 @@ function emptyRound() {
     course: '',
     date: new Date().toISOString().slice(0, 10),
     tee: '',
-    holes: Array.from({ length: 18 }, () => ({ a: '', b: '', p1: '', p2: '' })),
+    holes: Array.from({ length: 18 }, () => ({ a: '', b: '', aMark: '', bMark: '', p1: '', p2: '' })),
     feedback: { purposeful: '', threePlus: '', from2: '', from1: '', notes: '' }
   };
 }
@@ -1254,9 +1272,11 @@ function buildRoundCanvas() {
       const hole = currentRound.holes[h - 1];
       const val = r.field === null ? holeScore(hole) : hole[r.field];
       if (val !== '' && val != null) { total += parseFloat(val) || 0; hasAny = true; }
+      const mark = r.markField ? hole[r.markField] : '';
+      const display = (val === '' || val == null ? '' : String(val)) + (mark ? ` ${mark}` : '');
       ctx.fillStyle = ink;
       ctx.font = `11px ${fontStack}`;
-      ctx.fillText(val === '' || val == null ? '' : String(val), (colXs[h] + colXs[h + 1]) / 2, midY);
+      ctx.fillText(display, (colXs[h] + colXs[h + 1]) / 2, midY);
     }
     ctx.font = `bold 11px ${fontStack}`;
     ctx.fillText(hasAny ? String(total) : '–', (colXs[19] + colXs[20]) / 2, midY);
@@ -1417,7 +1437,15 @@ function renderHoleTable(containerId, holeNumbers, slug, totalLabel) {
       if (r.field === null) {
         return `<td class="row-c" id="c-${h}">${holeScore(hole)}</td>`;
       }
-      return `<td><input type="number" inputmode="numeric" data-hole="${h}" data-field="${r.field}" value="${hole[r.field]}"></td>`;
+      const numberInput = `<input type="number" inputmode="numeric" class="hole-num" data-hole="${h}" data-field="${r.field}" value="${hole[r.field]}">`;
+      if (!r.markField) {
+        return `<td>${numberInput}</td>`;
+      }
+      const markOptions = MARK_OPTIONS.map(m =>
+        `<option value="${m}" ${hole[r.markField] === m ? 'selected' : ''}>${m || '–'}</option>`
+      ).join('');
+      const markSelect = `<select class="hole-mark" data-hole="${h}" data-field="${r.markField}">${markOptions}</select>`;
+      return `<td><div class="hole-cell">${numberInput}${markSelect}</div></td>`;
     }).join('');
     return `<tr>
       <td class="row-code">${r.code}</td>
@@ -1432,8 +1460,9 @@ function renderHoleTable(containerId, holeNumbers, slug, totalLabel) {
       <tbody>${bodyRows}</tbody>
     </table>`;
 
-  container.querySelectorAll('input').forEach(input => {
-    input.addEventListener('input', e => {
+  container.querySelectorAll('input, select').forEach(el => {
+    const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+    el.addEventListener(eventName, e => {
       const hole = parseInt(e.target.dataset.hole, 10);
       const field = e.target.dataset.field;
       currentRound.holes[hole - 1][field] = e.target.value;
