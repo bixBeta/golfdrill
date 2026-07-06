@@ -768,12 +768,22 @@ function drillSubtitle(d, row) {
 }
 
 function buildSummaryCanvas() {
-  const width = 900;
-  const padding = 24;
-  const cardPad = 28;
-  const headerH = 90;
-  const rowH = 104;
-  const footerH = 50;
+  const width = 1000;
+  const padding = 20;
+  const cardPad = 26;
+  const headerH = 84;
+  const titleLineH = 18;
+  const captionLineH = 14;
+  const boxSize = 58;
+  const rowGap = 16;
+  const rowH = titleLineH + captionLineH + boxSize + rowGap;
+  const footerH = 34;
+  const ink = '#1c1c1c';
+  const muted = '#6b6b66';
+  const paper = '#f4efe0';
+  const cardPaper = '#fffdf6';
+  const fontStack = '"Helvetica Neue", Arial, sans-serif';
+
   const cardW = width - padding * 2;
   const cardH = cardPad * 2 + headerH + DRILLS.length * rowH + footerH;
   const height = cardH + padding * 2;
@@ -782,47 +792,66 @@ function buildSummaryCanvas() {
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  const fontStack = '"Helvetica Neue", Arial, sans-serif';
 
-  ctx.fillStyle = '#eeece6';
+  ctx.fillStyle = paper;
   ctx.fillRect(0, 0, width, height);
 
   const cardX = padding, cardY = padding;
-  roundRect(ctx, cardX, cardY, cardW, cardH, 16);
-  ctx.fillStyle = '#ffffff';
-  ctx.fill();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = '#dddddd';
-  ctx.stroke();
+  ctx.fillStyle = cardPaper;
+  ctx.fillRect(cardX, cardY, cardW, cardH);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = ink;
+  ctx.strokeRect(cardX, cardY, cardW, cardH);
 
   const contentX = cardX + cardPad;
   const contentW = cardW - cardPad * 2;
   let cursorY = cardY + cardPad;
 
-  drawDotIcon(ctx, contentX, cursorY, 32);
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#1c1c1c';
-  ctx.font = `bold 21px ${fontStack}`;
-  ctx.fillText('Scoring Practice Tracker', contentX + 44, cursorY);
-  ctx.fillStyle = '#6b6b66';
-  ctx.font = `12px ${fontStack}`;
-  ctx.fillText('Practice Summary', contentX + 44, cursorY + 26);
+  drawDotIcon(ctx, contentX, cursorY, 34);
+  ctx.fillStyle = ink;
+  ctx.font = `bold 22px ${fontStack}`;
+  ctx.fillText('SCORING PRACTICE TRACKER', contentX + 46, cursorY);
+  ctx.fillStyle = muted;
+  ctx.font = `11px ${fontStack}`;
+  ctx.fillText('PRACTICE SCORECARD', contentX + 46, cursorY + 26);
 
+  const nameVal = current.name || 'Unnamed session';
+  const dateVal = current.date || '';
   ctx.textAlign = 'right';
-  ctx.fillStyle = '#1c1c1c';
+  ctx.fillStyle = muted;
+  ctx.font = `10px ${fontStack}`;
+  ctx.fillText('NAME', contentX + contentW, cursorY);
+  ctx.fillStyle = ink;
   ctx.font = `bold 15px ${fontStack}`;
-  ctx.fillText(current.name || 'Unnamed session', contentX + contentW, cursorY + 2);
-  ctx.fillStyle = '#6b6b66';
-  ctx.font = `13px ${fontStack}`;
-  ctx.fillText(current.date || '', contentX + contentW, cursorY + 22);
+  ctx.fillText(nameVal, contentX + contentW, cursorY + 12);
+  ctx.fillStyle = muted;
+  ctx.font = `10px ${fontStack}`;
+  ctx.fillText('DATE', contentX + contentW, cursorY + 34);
+  ctx.fillStyle = ink;
+  ctx.font = `bold 13px ${fontStack}`;
+  ctx.fillText(dateVal, contentX + contentW, cursorY + 46);
 
   cursorY += headerH;
-  ctx.strokeStyle = '#e5e3db';
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(contentX, cursorY - 14);
-  ctx.lineTo(contentX + contentW, cursorY - 14);
+  ctx.moveTo(contentX, cursorY - 12);
+  ctx.lineTo(contentX + contentW, cursorY - 12);
   ctx.stroke();
+
+  // 8 attempt boxes + TOTAL, TARGET, #PP boxes on the same grid line, like the paper card
+  const resultLabels = ['TOTAL', 'TARGET', '#PP'];
+  const boxGap = 8;
+  const groupGap = 22;
+  const clusterWidth = 11 * boxSize + 9 * boxGap + groupGap;
+  const clusterStart = contentX + (contentW - clusterWidth) / 2;
+  const boxX = [];
+  let bx = clusterStart;
+  for (let i = 0; i < 8; i++) { boxX.push(bx); bx += boxSize + boxGap; }
+  bx += groupGap - boxGap;
+  for (let i = 0; i < 3; i++) { boxX.push(bx); bx += boxSize + boxGap; }
 
   DRILLS.forEach(d => {
     const row = current.rows[d.key];
@@ -831,51 +860,64 @@ function buildSummaryCanvas() {
     const rowTop = cursorY;
 
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#1c1c1c';
-    ctx.font = `bold 15px ${fontStack}`;
+    ctx.fillStyle = ink;
+    ctx.font = `bold 13px ${fontStack}`;
     ctx.fillText(d.title.toUpperCase(), contentX, rowTop);
 
-    ctx.fillStyle = '#6b6b66';
-    ctx.font = `12px ${fontStack}`;
-    ctx.fillText(drillSubtitle(d, row), contentX, rowTop + 22);
-
-    const attemptsStr = row.attempts.map(v => v === '' ? '–' : v).join('   ');
-    ctx.fillStyle = '#999999';
-    ctx.font = `12px ${fontStack}`;
-    ctx.fillText(attemptsStr, contentX, rowTop + 44);
-
     ctx.textAlign = 'right';
-    ctx.fillStyle = pass === null ? '#1c1c1c' : (pass ? '#1c6b4a' : '#b6412e');
-    ctx.font = `bold 30px ${fontStack}`;
-    ctx.fillText(String(sum), contentX + contentW - 46, rowTop - 4);
-
-    ctx.fillStyle = '#6b6b66';
+    ctx.fillStyle = muted;
     ctx.font = `11px ${fontStack}`;
-    ctx.fillText(`TARGET ${row.target || '–'}`, contentX + contentW - 46, rowTop + 32);
+    ctx.fillText(drillSubtitle(d, row), contentX + contentW, rowTop + 1);
 
-    const badgeW = 32, badgeH = 20;
-    const badgeX = contentX + contentW - badgeW;
-    const badgeY = rowTop + 54;
-    roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 10);
-    ctx.fillStyle = '#1c1c1c';
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `bold 11px ${fontStack}`;
+    const captionY = rowTop + titleLineH;
+    const boxesTop = captionY + captionLineH;
+
+    // 8 attempt boxes
     ctx.textAlign = 'center';
-    ctx.fillText(`PP${d.pp}`, badgeX + badgeW / 2, badgeY + 4);
+    for (let i = 0; i < 8; i++) {
+      ctx.strokeStyle = '#999999';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(boxX[i], boxesTop, boxSize, boxSize);
+      const val = row.attempts[i];
+      if (val !== '') {
+        ctx.fillStyle = ink;
+        ctx.font = `bold 18px ${fontStack}`;
+        ctx.fillText(val, boxX[i] + boxSize / 2, boxesTop + boxSize / 2 - 10);
+      }
+    }
+
+    // TOTAL / TARGET / #PP boxes, captions above
+    const resultValues = [String(sum), row.target || '–', d.pp];
+    const totalColor = pass === null ? ink : (pass ? '#1c6b4a' : '#b6412e');
+    const resultColors = [totalColor, ink, ink];
+    for (let i = 0; i < 3; i++) {
+      const x = boxX[8 + i];
+      ctx.fillStyle = muted;
+      ctx.font = `bold 9px ${fontStack}`;
+      ctx.fillText(resultLabels[i], x + boxSize / 2, captionY);
+
+      ctx.strokeStyle = resultColors[i];
+      ctx.lineWidth = i === 0 && pass !== null ? 2 : 1;
+      ctx.strokeRect(x, boxesTop, boxSize, boxSize);
+
+      ctx.fillStyle = resultColors[i];
+      ctx.font = `bold 18px ${fontStack}`;
+      ctx.fillText(resultValues[i], x + boxSize / 2, boxesTop + boxSize / 2 - 10);
+    }
 
     cursorY += rowH;
-    ctx.strokeStyle = '#f0efe9';
+    ctx.strokeStyle = '#d8d2bd';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(contentX, cursorY - 16);
-    ctx.lineTo(contentX + contentW, cursorY - 16);
+    ctx.moveTo(contentX, cursorY - rowGap / 2);
+    ctx.lineTo(contentX + contentW, cursorY - rowGap / 2);
     ctx.stroke();
   });
 
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#999999';
-  ctx.font = `11px ${fontStack}`;
-  ctx.fillText('Free tool inspired by The Scoring Method · not affiliated with Will Robins, PGA', contentX, cursorY + 10);
+  ctx.fillStyle = muted;
+  ctx.font = `10px ${fontStack}`;
+  ctx.fillText('Free tool inspired by The Scoring Method · not affiliated with Will Robins, PGA', contentX, cursorY + 6);
 
   return canvas;
 }
