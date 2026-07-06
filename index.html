@@ -237,17 +237,61 @@
     flex-wrap: wrap;
     margin-top: 8px;
   }
-  button.primary, button.secondary {
+  button.primary, button.secondary, a.secondary {
     padding: 10px 18px;
     border-radius: 5px;
     border: none;
     font-size: 14px;
     cursor: pointer;
     letter-spacing: 0.3px;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
   }
   button.primary { background: var(--accent); color: #fff; }
-  button.secondary { background: #fff; color: var(--ink); border: 1px solid #999; }
+  button.secondary, a.secondary { background: #fff; color: var(--ink); border: 1px solid #999; }
   button.danger { background: #fff; color: var(--accent-red); border: 1px solid var(--accent-red); }
+
+  .image-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+  }
+  .image-modal[hidden] {
+    display: none;
+  }
+  .image-modal-inner {
+    background: #fff;
+    border-radius: 10px;
+    padding: 16px;
+    max-width: 460px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    text-align: center;
+  }
+  .image-modal-inner img {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+  }
+  .image-modal-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .image-modal-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .image-modal-actions > * { flex: 1; }
 
   .history-scroll {
     overflow-x: auto;
@@ -336,7 +380,7 @@
     .meta-row input[type=text], .meta-row input[type=date] { min-width: 0; width: 100%; }
     .actions { flex-direction: column; }
     .actions button { width: 100%; }
-    button.primary, button.secondary, button.danger { min-height: 44px; }
+    button.primary, button.secondary, button.danger, a.secondary { min-height: 44px; line-height: 24px; }
   }
 </style>
 </head>
@@ -379,7 +423,7 @@
       <div class="actions">
         <button class="primary" id="saveSessionBtn">Save Session</button>
         <button class="secondary" id="clearFormBtn">Clear Form</button>
-        <button class="secondary" id="printBtn">Print / Save PDF</button>
+        <button class="secondary" id="summaryImageBtn">Save Summary Image</button>
       </div>
     </div>
   </section>
@@ -480,6 +524,18 @@
   </section>
 
 </main>
+
+<div id="imageModal" class="image-modal" hidden>
+  <div class="image-modal-inner">
+    <img id="summaryImg" alt="Practice summary card">
+    <p class="image-modal-hint">On iPhone: tap <b>Save Image</b> below, or press and hold the image and choose "Add to Photos".</p>
+    <div class="image-modal-actions">
+      <button class="primary" id="shareImageBtn">Save Image</button>
+      <a class="secondary" id="downloadImageBtn" download="scoring-summary.png">Download</a>
+      <button class="secondary" id="closeImageModalBtn">Close</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const DRILLS = [
@@ -596,20 +652,27 @@ function attachDrillListeners() {
   });
 }
 
+function sumAttempts(row) {
+  return row.attempts.reduce((acc, v) => acc + (parseFloat(v) || 0), 0);
+}
+
+function drillPass(drillDef, row, sum) {
+  const target = parseFloat(row.target);
+  if (isNaN(target) || !row.attempts.some(v => v !== '')) return null;
+  return drillDef.lowerBetter ? sum <= target : sum >= target;
+}
+
 function updateTotal(key) {
   const row = current.rows[key];
-  const sum = row.attempts.reduce((acc, v) => acc + (parseFloat(v) || 0), 0);
+  const sum = sumAttempts(row);
   const totalEl = document.getElementById(`total-${key}`);
   totalEl.textContent = sum;
 
   const drillDef = DRILLS.find(d => d.key === key);
   const box = totalEl.closest('.total-box');
   box.classList.remove('status-pass', 'status-fail');
-  const target = parseFloat(row.target);
-  if (!isNaN(target) && row.attempts.some(v => v !== '')) {
-    const pass = drillDef.lowerBetter ? sum <= target : sum >= target;
-    box.classList.add(pass ? 'status-pass' : 'status-fail');
-  }
+  const pass = drillPass(drillDef, row, sum);
+  if (pass !== null) box.classList.add(pass ? 'status-pass' : 'status-fail');
 }
 
 function collectMeta() {
@@ -656,7 +719,196 @@ document.getElementById('clearFormBtn').addEventListener('click', () => {
   renderDrills();
 });
 
-document.getElementById('printBtn').addEventListener('click', () => window.print());
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawDotIcon(ctx, x, y, size) {
+  roundRect(ctx, x, y, size, size, size * 0.15);
+  ctx.fillStyle = '#1c1c1c';
+  ctx.fill();
+  const filled = [[0,0],[2,0],[1,1],[1,2]];
+  const positions = [0.25, 0.5, 0.75].map(f => f * size);
+  const r = size * 0.074;
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      const cx = x + positions[col];
+      const cy = y + positions[row];
+      const isFilled = filled.some(([c, rr]) => c === col && rr === row);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      if (isFilled) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = size * 0.02;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function drillSubtitle(d, row) {
+  const parts = [];
+  if (d.isGoToClub) {
+    if (row.target) parts.push(`Target ${row.target} total yds`);
+    if (row.minWidth) parts.push(`min ${row.minWidth} yd fairway`);
+  } else {
+    if (row.target) parts.push(`Target ${row.target}`);
+    if (row.unitValue) parts.push(`${row.unitValue} ${d.unit}`);
+  }
+  return parts.join('  ·  ') || 'No target set';
+}
+
+function buildSummaryCanvas() {
+  const width = 900;
+  const padding = 24;
+  const cardPad = 28;
+  const headerH = 90;
+  const rowH = 104;
+  const footerH = 50;
+  const cardW = width - padding * 2;
+  const cardH = cardPad * 2 + headerH + DRILLS.length * rowH + footerH;
+  const height = cardH + padding * 2;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  const fontStack = '"Helvetica Neue", Arial, sans-serif';
+
+  ctx.fillStyle = '#eeece6';
+  ctx.fillRect(0, 0, width, height);
+
+  const cardX = padding, cardY = padding;
+  roundRect(ctx, cardX, cardY, cardW, cardH, 16);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#dddddd';
+  ctx.stroke();
+
+  const contentX = cardX + cardPad;
+  const contentW = cardW - cardPad * 2;
+  let cursorY = cardY + cardPad;
+
+  drawDotIcon(ctx, contentX, cursorY, 32);
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#1c1c1c';
+  ctx.font = `bold 21px ${fontStack}`;
+  ctx.fillText('Scoring Practice Tracker', contentX + 44, cursorY);
+  ctx.fillStyle = '#6b6b66';
+  ctx.font = `12px ${fontStack}`;
+  ctx.fillText('Practice Summary', contentX + 44, cursorY + 26);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#1c1c1c';
+  ctx.font = `bold 15px ${fontStack}`;
+  ctx.fillText(current.name || 'Unnamed session', contentX + contentW, cursorY + 2);
+  ctx.fillStyle = '#6b6b66';
+  ctx.font = `13px ${fontStack}`;
+  ctx.fillText(current.date || '', contentX + contentW, cursorY + 22);
+
+  cursorY += headerH;
+  ctx.strokeStyle = '#e5e3db';
+  ctx.beginPath();
+  ctx.moveTo(contentX, cursorY - 14);
+  ctx.lineTo(contentX + contentW, cursorY - 14);
+  ctx.stroke();
+
+  DRILLS.forEach(d => {
+    const row = current.rows[d.key];
+    const sum = sumAttempts(row);
+    const pass = drillPass(d, row, sum);
+    const rowTop = cursorY;
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#1c1c1c';
+    ctx.font = `bold 15px ${fontStack}`;
+    ctx.fillText(d.title.toUpperCase(), contentX, rowTop);
+
+    ctx.fillStyle = '#6b6b66';
+    ctx.font = `12px ${fontStack}`;
+    ctx.fillText(drillSubtitle(d, row), contentX, rowTop + 22);
+
+    const attemptsStr = row.attempts.map(v => v === '' ? '–' : v).join('   ');
+    ctx.fillStyle = '#999999';
+    ctx.font = `12px ${fontStack}`;
+    ctx.fillText(attemptsStr, contentX, rowTop + 44);
+
+    ctx.textAlign = 'right';
+    ctx.fillStyle = pass === null ? '#1c1c1c' : (pass ? '#1c6b4a' : '#b6412e');
+    ctx.font = `bold 30px ${fontStack}`;
+    ctx.fillText(String(sum), contentX + contentW - 46, rowTop - 4);
+
+    ctx.fillStyle = '#6b6b66';
+    ctx.font = `11px ${fontStack}`;
+    ctx.fillText(`TARGET ${row.target || '–'}`, contentX + contentW - 46, rowTop + 32);
+
+    const badgeW = 32, badgeH = 20;
+    const badgeX = contentX + contentW - badgeW;
+    const badgeY = rowTop + 54;
+    roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 10);
+    ctx.fillStyle = '#1c1c1c';
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold 11px ${fontStack}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(`PP${d.pp}`, badgeX + badgeW / 2, badgeY + 4);
+
+    cursorY += rowH;
+    ctx.strokeStyle = '#f0efe9';
+    ctx.beginPath();
+    ctx.moveTo(contentX, cursorY - 16);
+    ctx.lineTo(contentX + contentW, cursorY - 16);
+    ctx.stroke();
+  });
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#999999';
+  ctx.font = `11px ${fontStack}`;
+  ctx.fillText('Free tool inspired by The Scoring Method · not affiliated with Will Robins, PGA', contentX, cursorY + 10);
+
+  return canvas;
+}
+
+let currentSummaryBlob = null;
+
+function openSummaryModal() {
+  collectMeta();
+  const canvas = buildSummaryCanvas();
+  const img = document.getElementById('summaryImg');
+  const downloadLink = document.getElementById('downloadImageBtn');
+  img.src = canvas.toDataURL('image/png');
+  downloadLink.href = img.src;
+  canvas.toBlob(blob => { currentSummaryBlob = blob; }, 'image/png');
+  document.getElementById('imageModal').hidden = false;
+}
+
+document.getElementById('summaryImageBtn').addEventListener('click', openSummaryModal);
+
+document.getElementById('closeImageModalBtn').addEventListener('click', () => {
+  document.getElementById('imageModal').hidden = true;
+});
+
+document.getElementById('shareImageBtn').addEventListener('click', async () => {
+  if (!currentSummaryBlob) return;
+  const file = new File([currentSummaryBlob], 'scoring-summary.png', { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Scoring Practice Summary' }); }
+    catch (e) { /* user cancelled share sheet */ }
+  } else {
+    alert('Direct save isn\'t supported in this browser. Press and hold the image above and choose "Add to Photos", or use Download.');
+  }
+});
 
 function renderHistory() {
   const sessions = loadSessions().slice().sort((a,b) => (b.date || '').localeCompare(a.date || ''));
@@ -668,7 +920,7 @@ function renderHistory() {
   const rowsHtml = sessions.map(s => {
     const totals = DRILLS.map(d => {
       const row = s.rows[d.key];
-      const sum = row.attempts.reduce((acc, v) => acc + (parseFloat(v) || 0), 0);
+      const sum = sumAttempts(row);
       return `${d.pp}:${sum}`;
     }).join(' &nbsp; ');
     return `<tr data-id="${s.id}">
