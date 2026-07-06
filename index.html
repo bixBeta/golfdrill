@@ -362,6 +362,92 @@
     vertical-align: middle;
   }
 
+  .hole-table-title {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin: 16px 0 6px;
+  }
+  table.hole-table {
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 620px;
+  }
+  table.hole-table th, table.hole-table td {
+    border: 1px solid #ccc;
+    padding: 4px;
+    text-align: center;
+  }
+  table.hole-table th {
+    background: #f2f1ea;
+    font-size: 11px;
+  }
+  table.hole-table .row-code {
+    font-weight: bold;
+    background: #f2f1ea;
+  }
+  table.hole-table .row-desc {
+    text-align: left;
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 90px;
+  }
+  table.hole-table input {
+    width: 34px;
+    border: none;
+    text-align: center;
+    font-size: 14px;
+    padding: 4px 0;
+  }
+  table.hole-table .row-c {
+    font-weight: bold;
+    background: #fafaf5;
+  }
+  table.hole-table .row-total {
+    font-weight: bold;
+    background: #f2f1ea;
+  }
+  .round-totals {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .round-totals .result-box { min-width: 90px; }
+  .scoring-zone-box {
+    background: #f2f1ea;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  .scoring-zone-box .legend {
+    display: inline-block;
+    margin-right: 14px;
+    color: var(--muted);
+  }
+  .feedback-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .feedback-grid label {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .feedback-grid input {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 16px;
+  }
+
   @media print {
     header.top, nav.tabs, .actions, #history-tab, .guide { display: none !important; }
     body { background: #fff; }
@@ -393,6 +479,7 @@
   </div>
   <nav class="tabs">
     <button data-tab="scorecard" class="active">Scorecard</button>
+    <button data-tab="round">Round</button>
     <button data-tab="history">History</button>
     <button data-tab="guide">Guide</button>
   </nav>
@@ -428,11 +515,93 @@
     </div>
   </section>
 
+  <!-- ROUND -->
+  <section id="round-tab" class="panel">
+    <div class="card">
+      <div class="meta-row">
+        <div>
+          <label>Name</label>
+          <input type="text" id="roundName" placeholder="Your name">
+        </div>
+        <div>
+          <label>Course</label>
+          <input type="text" id="roundCourse" placeholder="Course name">
+        </div>
+        <div>
+          <label>Date</label>
+          <input type="date" id="roundDate">
+        </div>
+        <div>
+          <label>Tee</label>
+          <input type="text" id="roundTee" placeholder="e.g. White">
+        </div>
+      </div>
+      <p class="instructions">
+        <b>A · Entering the Scoring Zone</b> — shots taken to get the ball inside 100 yards of the hole.
+        <b>B · Down in the Scoring Zone</b> — shots taken from there until it's holed.
+        <b>C · Score</b> is A+B, calculated for you. Rows <b>1</b> and <b>2</b> track putts made (one-putts) and total putts per hole.
+      </p>
+
+      <div class="hole-tables">
+        <h3 class="hole-table-title">Front 9</h3>
+        <div class="history-scroll"><div id="frontNine"></div></div>
+        <h3 class="hole-table-title">Back 9</h3>
+        <div class="history-scroll"><div id="backNine"></div></div>
+      </div>
+
+      <div class="round-totals" id="roundTotals"></div>
+
+      <div class="scoring-zone-box">
+        <b>Scoring Zone = inside 100 yards.</b> Legend used on the paper card this mirrors:
+        <span class="legend">✓ successful</span>
+        <span class="legend">✗ unsuccessful</span>
+        <span class="legend">○ control / penalty</span>
+        <span class="legend">+ putt made over 4 ft</span>
+      </div>
+
+      <div class="drill-head" style="margin-top:16px;">
+        <h3>Round Feedback</h3>
+      </div>
+      <div class="feedback-grid">
+        <label>Purposeful practice count (dd)
+          <input type="number" inputmode="numeric" id="fbPurposeful">
+        </label>
+        <label>Total 3+ putts
+          <input type="number" inputmode="numeric" id="fbThreePlus">
+        </label>
+        <label>From 2 putts
+          <input type="number" inputmode="numeric" id="fbFrom2">
+        </label>
+        <label>From 1 putt
+          <input type="number" inputmode="numeric" id="fbFrom1">
+        </label>
+      </div>
+      <div class="notes" style="margin-top:10px;">
+        <label style="font-size:11px;color:var(--muted);text-transform:uppercase;">Notes / coach feedback for this round</label>
+        <textarea id="fbNotes" placeholder="e.g. lost strokes on holes 4 and 13 not getting down in 3"></textarea>
+      </div>
+
+      <p class="instructions" style="margin-top:14px;">
+        The bucketed success/feedback tallies on the original paper card (by-row putt breakdowns) are specific to
+        each coach's exact method, so they're left as free notes above rather than guessed at &mdash; everything
+        else (score, totals) is calculated for you.
+      </p>
+
+      <div class="actions">
+        <button class="primary" id="saveRoundBtn">Save Round</button>
+        <button class="secondary" id="clearRoundBtn">Clear Round</button>
+        <button class="secondary" id="roundImageBtn">Save Round Image</button>
+      </div>
+    </div>
+  </section>
+
   <!-- HISTORY -->
   <section id="history-tab" class="panel">
     <div class="card">
       <h2 style="margin-top:0;">Practice History</h2>
       <div id="historyContent"></div>
+      <h2>Round History</h2>
+      <div id="roundHistoryContent"></div>
     </div>
   </section>
 
@@ -484,6 +653,16 @@
         even if it isn't your longest option. The goal isn't distance &mdash; it's eliminating penalty strokes and
         blow-up holes.</p>
       </div>
+
+      <h3>Tracking a live round: Entering vs. Down in the Scoring Zone</h3>
+      <p>
+        Robins splits every hole into two halves: <b>Entering the Scoring Zone</b> &mdash; the shots it takes to get
+        the ball inside 100 yards of the hole &mdash; and <b>Getting Down in the Scoring Zone</b> &mdash; everything
+        from there until it's holed. Add the two together and that's your score for the hole. On a par 4, for
+        example, the target is entering the zone in 2 shots, then getting down in 2 (one approach, one putt) for
+        par. The <b>Round</b> tab in this app mirrors that: enter your Entering (A) and Down-in (B) shots per hole
+        and it totals your score (C), front/back/round totals, and putts automatically.
+      </p>
 
       <h3>Track proximity by zone, not just putts</h3>
       <p>One of Robins' clearest diagnostic tips: log the distance of your first putt on every hole for a full
@@ -545,6 +724,53 @@ const DRILLS = [
   { key: 'wedge3', title: '3 Shot Scoring Zone - Wedges', unit: 'YARDS FROM GREEN', pp: 'B', lowerBetter: true },
   { key: 'gotoclub', title: 'Go To Club', unit: null, pp: 'A', lowerBetter: false, isGoToClub: true },
 ];
+
+const INK = '#1c1c1c';
+const MUTED = '#6b6b66';
+const PAPER = '#f4efe0';
+const CARD_PAPER = '#fffdf6';
+const FONT_STACK = '"Helvetica Neue", Arial, sans-serif';
+
+const HOLES_FRONT = [1,2,3,4,5,6,7,8,9];
+const HOLES_BACK = [10,11,12,13,14,15,16,17,18];
+const ROUND_ROWS = [
+  { code: 'A', label: 'Entering Scoring Zone', field: 'a' },
+  { code: 'B', label: 'Down in Scoring Zone', field: 'b' },
+  { code: 'C', label: 'Score (A+B)', field: null },
+  { code: '1', label: 'Putts Made', field: 'p1' },
+  { code: '2', label: 'Total Putts', field: 'p2' },
+];
+
+const ROUND_STORAGE_KEY = 'scoringMethodRounds';
+
+function emptyRound() {
+  return {
+    id: Date.now().toString(),
+    name: '',
+    course: '',
+    date: new Date().toISOString().slice(0, 10),
+    tee: '',
+    holes: Array.from({ length: 18 }, () => ({ a: '', b: '', p1: '', p2: '' })),
+    feedback: { purposeful: '', threePlus: '', from2: '', from1: '', notes: '' }
+  };
+}
+
+let currentRound = emptyRound();
+
+function loadRounds() {
+  try {
+    return JSON.parse(localStorage.getItem(ROUND_STORAGE_KEY)) || [];
+  } catch (e) { return []; }
+}
+
+function saveRounds(rounds) {
+  localStorage.setItem(ROUND_STORAGE_KEY, JSON.stringify(rounds));
+}
+
+function holeScore(hole) {
+  if (hole.a === '' && hole.b === '') return '';
+  return (parseFloat(hole.a) || 0) + (parseFloat(hole.b) || 0);
+}
 
 const STORAGE_KEY = 'scoringMethodSessions';
 
@@ -692,7 +918,8 @@ document.querySelectorAll('nav.tabs button').forEach(btn => {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(`${btn.dataset.tab}-tab`).classList.add('active');
-    if (btn.dataset.tab === 'history') renderHistory();
+    if (btn.dataset.tab === 'history') { renderHistory(); renderRoundHistory(); }
+    if (btn.dataset.tab === 'round') renderRound();
   });
 });
 
@@ -778,11 +1005,7 @@ function buildSummaryCanvas() {
   const rowGap = 16;
   const rowH = titleLineH + captionLineH + boxSize + rowGap;
   const footerH = 34;
-  const ink = '#1c1c1c';
-  const muted = '#6b6b66';
-  const paper = '#f4efe0';
-  const cardPaper = '#fffdf6';
-  const fontStack = '"Helvetica Neue", Arial, sans-serif';
+  const ink = INK, muted = MUTED, paper = PAPER, cardPaper = CARD_PAPER, fontStack = FONT_STACK;
 
   const cardW = width - padding * 2;
   const cardH = cardPad * 2 + headerH + DRILLS.length * rowH + footerH;
@@ -924,20 +1147,184 @@ function buildSummaryCanvas() {
   return canvas;
 }
 
-let currentSummaryBlob = null;
+function buildRoundCanvas() {
+  const width = 1000;
+  const padding = 20;
+  const cardPad = 26;
+  const ink = INK, muted = MUTED, paper = PAPER, cardPaper = CARD_PAPER, fontStack = FONT_STACK;
 
-function openSummaryModal() {
-  collectMeta();
-  const canvas = buildSummaryCanvas();
+  const headerH = 56;
+  const gridHeaderH = 20;
+  const dataRowH = 32;
+  const gridH = gridHeaderH + dataRowH * ROUND_ROWS.length;
+  const feedbackH = 90;
+  const footerH = 24;
+  const sectionGap = 16;
+
+  const cardW = width - padding * 2;
+  const contentW = cardW - cardPad * 2;
+  const cardH = cardPad * 2 + headerH + sectionGap + gridH + sectionGap + feedbackH + sectionGap + footerH;
+  const height = cardH + padding * 2;
+
+  const exportScale = 3;
+  const canvas = document.createElement('canvas');
+  canvas.width = width * exportScale;
+  canvas.height = height * exportScale;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(exportScale, exportScale);
+
+  ctx.fillStyle = paper;
+  ctx.fillRect(0, 0, width, height);
+
+  const cardX = padding, cardY = padding;
+  ctx.fillStyle = cardPaper;
+  ctx.fillRect(cardX, cardY, cardW, cardH);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = ink;
+  ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+  const contentX = cardX + cardPad;
+  let cursorY = cardY + cardPad;
+
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  drawDotIcon(ctx, contentX, cursorY, 34);
+  ctx.fillStyle = ink;
+  ctx.font = `bold 20px ${fontStack}`;
+  ctx.fillText('SCORING PRACTICE TRACKER', contentX + 46, cursorY);
+  ctx.fillStyle = muted;
+  ctx.font = `11px ${fontStack}`;
+  ctx.fillText('ROUND CARD', contentX + 46, cursorY + 24);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = ink;
+  ctx.font = `bold 13px ${fontStack}`;
+  ctx.fillText(`NAME ${currentRound.name || '—'}    COURSE ${currentRound.course || '—'}`, contentX + contentW, cursorY + 2);
+  ctx.fillStyle = muted;
+  ctx.font = `12px ${fontStack}`;
+  ctx.fillText(`DATE ${currentRound.date || '—'}    TEE ${currentRound.tee || '—'}`, contentX + contentW, cursorY + 22);
+
+  cursorY += headerH;
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(contentX, cursorY - sectionGap / 2);
+  ctx.lineTo(contentX + contentW, cursorY - sectionGap / 2);
+  ctx.stroke();
+
+  // hole grid: code column + 18 holes + total column
+  const codeColW = 30;
+  const dataColW = (contentW - codeColW) / 19;
+  const colXs = [contentX, contentX + codeColW];
+  for (let i = 0; i < 19; i++) colXs.push(colXs[colXs.length - 1] + dataColW);
+  const rowYs = [cursorY, cursorY + gridHeaderH];
+  for (let i = 0; i < ROUND_ROWS.length; i++) rowYs.push(rowYs[rowYs.length - 1] + dataRowH);
+
+  ctx.fillStyle = '#f2f1ea';
+  ctx.fillRect(contentX, cursorY, contentW, gridHeaderH);
+
+  ctx.strokeStyle = '#999999';
+  ctx.lineWidth = 1;
+  colXs.forEach(x => {
+    ctx.beginPath(); ctx.moveTo(x, rowYs[0]); ctx.lineTo(x, rowYs[rowYs.length - 1]); ctx.stroke();
+  });
+  rowYs.forEach(y => {
+    ctx.beginPath(); ctx.moveTo(contentX, y); ctx.lineTo(contentX + contentW, y); ctx.stroke();
+  });
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = ink;
+  ctx.font = `bold 10px ${fontStack}`;
+  for (let h = 1; h <= 18; h++) {
+    ctx.fillText(String(h), (colXs[h] + colXs[h + 1]) / 2, rowYs[0] + 5);
+  }
+  ctx.fillText('TOT', (colXs[19] + colXs[20]) / 2, rowYs[0] + 5);
+
+  ROUND_ROWS.forEach((r, ri) => {
+    const rowTop = rowYs[ri + 1];
+    const midY = rowTop + 10;
+
+    ctx.fillStyle = ink;
+    ctx.font = `bold 11px ${fontStack}`;
+    ctx.fillText(r.code, (colXs[0] + colXs[1]) / 2, midY);
+
+    let total = 0;
+    let hasAny = false;
+    for (let h = 1; h <= 18; h++) {
+      const hole = currentRound.holes[h - 1];
+      const val = r.field === null ? holeScore(hole) : hole[r.field];
+      if (val !== '' && val != null) { total += parseFloat(val) || 0; hasAny = true; }
+      ctx.fillStyle = ink;
+      ctx.font = `11px ${fontStack}`;
+      ctx.fillText(val === '' || val == null ? '' : String(val), (colXs[h] + colXs[h + 1]) / 2, midY);
+    }
+    ctx.font = `bold 11px ${fontStack}`;
+    ctx.fillText(hasAny ? String(total) : '–', (colXs[19] + colXs[20]) / 2, midY);
+  });
+
+  cursorY = rowYs[rowYs.length - 1] + sectionGap;
+
+  // feedback boxes
+  const feedbackItems = [
+    ['PURPOSEFUL', currentRound.feedback.purposeful || '–'],
+    ['3+ PUTTS', currentRound.feedback.threePlus || '–'],
+    ['FROM 2', currentRound.feedback.from2 || '–'],
+    ['FROM 1', currentRound.feedback.from1 || '–'],
+  ];
+  const fbBoxSize = 74;
+  const fbGap = 18;
+  const fbTotalW = feedbackItems.length * fbBoxSize + (feedbackItems.length - 1) * fbGap;
+  let fbX = contentX + (contentW - fbTotalW) / 2;
+  const fbTop = cursorY;
+  feedbackItems.forEach(([label, value]) => {
+    ctx.textAlign = 'center';
+    ctx.fillStyle = muted;
+    ctx.font = `bold 9px ${fontStack}`;
+    ctx.fillText(label, fbX + fbBoxSize / 2, fbTop);
+
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(fbX, fbTop + 14, fbBoxSize, fbBoxSize - 14);
+
+    ctx.fillStyle = ink;
+    ctx.font = `bold 16px ${fontStack}`;
+    ctx.fillText(String(value), fbX + fbBoxSize / 2, fbTop + 14 + (fbBoxSize - 14) / 2 - 8);
+
+    fbX += fbBoxSize + fbGap;
+  });
+
+  cursorY += feedbackH;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = muted;
+  ctx.font = `10px ${fontStack}`;
+  ctx.fillText('Free tool inspired by The Scoring Method · not affiliated with Will Robins, PGA', contentX, cursorY + 4);
+
+  return canvas;
+}
+
+let currentSummaryBlob = null;
+let currentSummaryFilename = 'scoring-summary.png';
+
+function openImageModal(canvas, filename) {
+  currentSummaryFilename = filename;
   const img = document.getElementById('summaryImg');
   const downloadLink = document.getElementById('downloadImageBtn');
   img.src = canvas.toDataURL('image/png');
   downloadLink.href = img.src;
+  downloadLink.setAttribute('download', filename);
   canvas.toBlob(blob => { currentSummaryBlob = blob; }, 'image/png');
   document.getElementById('imageModal').hidden = false;
 }
 
-document.getElementById('summaryImageBtn').addEventListener('click', openSummaryModal);
+document.getElementById('summaryImageBtn').addEventListener('click', () => {
+  collectMeta();
+  openImageModal(buildSummaryCanvas(), 'scoring-summary.png');
+});
+
+document.getElementById('roundImageBtn').addEventListener('click', () => {
+  collectRoundMeta();
+  openImageModal(buildRoundCanvas(), 'round-summary.png');
+});
 
 document.getElementById('closeImageModalBtn').addEventListener('click', () => {
   document.getElementById('imageModal').hidden = true;
@@ -945,7 +1332,7 @@ document.getElementById('closeImageModalBtn').addEventListener('click', () => {
 
 document.getElementById('shareImageBtn').addEventListener('click', async () => {
   if (!currentSummaryBlob) return;
-  const file = new File([currentSummaryBlob], 'scoring-summary.png', { type: 'image/png' });
+  const file = new File([currentSummaryBlob], currentSummaryFilename, { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file], title: 'Scoring Practice Summary' }); }
     catch (e) { /* user cancelled share sheet */ }
@@ -1004,8 +1391,183 @@ function renderHistory() {
   });
 }
 
+function rowValue(row, hole) {
+  return row.field === null ? holeScore(hole) : hole[row.field];
+}
+
+function sumRowForHoles(row, holes, holeNumbers) {
+  let total = 0, hasAny = false;
+  holeNumbers.forEach(h => {
+    const val = rowValue(row, holes[h - 1]);
+    if (val !== '' && val != null) { total += parseFloat(val) || 0; hasAny = true; }
+  });
+  return hasAny ? total : 0;
+}
+
+function sumRow(row, holeNumbers) {
+  return sumRowForHoles(row, currentRound.holes, holeNumbers);
+}
+
+function renderHoleTable(containerId, holeNumbers, slug, totalLabel) {
+  const container = document.getElementById(containerId);
+  const headerCells = holeNumbers.map(h => `<th>${h}</th>`).join('');
+  const bodyRows = ROUND_ROWS.map(r => {
+    const cells = holeNumbers.map(h => {
+      const hole = currentRound.holes[h - 1];
+      if (r.field === null) {
+        return `<td class="row-c" id="c-${h}">${holeScore(hole)}</td>`;
+      }
+      return `<td><input type="number" inputmode="numeric" data-hole="${h}" data-field="${r.field}" value="${hole[r.field]}"></td>`;
+    }).join('');
+    return `<tr>
+      <td class="row-code">${r.code}</td>
+      <td class="row-desc">${r.label}</td>
+      ${cells}
+      <td class="row-total" id="total-${slug}-${r.code}">${sumRow(r, holeNumbers)}</td>
+    </tr>`;
+  }).join('');
+  container.innerHTML = `
+    <table class="hole-table">
+      <thead><tr><th>Hole</th><th>Row</th>${headerCells}<th>${totalLabel}</th></tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table>`;
+
+  container.querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', e => {
+      const hole = parseInt(e.target.dataset.hole, 10);
+      const field = e.target.dataset.field;
+      currentRound.holes[hole - 1][field] = e.target.value;
+      updateHoleDerived(hole);
+    });
+  });
+}
+
+function updateHoleDerived(holeNum) {
+  const hole = currentRound.holes[holeNum - 1];
+  const cCell = document.getElementById(`c-${holeNum}`);
+  if (cCell) cCell.textContent = holeScore(hole);
+  ROUND_ROWS.forEach(r => {
+    const frontCell = document.getElementById(`total-front-${r.code}`);
+    if (frontCell) frontCell.textContent = sumRow(r, HOLES_FRONT);
+    const backCell = document.getElementById(`total-back-${r.code}`);
+    if (backCell) backCell.textContent = sumRow(r, HOLES_BACK);
+  });
+  renderRoundTotals();
+}
+
+function renderRoundTotals() {
+  const container = document.getElementById('roundTotals');
+  const allHoles = [...HOLES_FRONT, ...HOLES_BACK];
+  container.innerHTML = ROUND_ROWS.map(r => `
+    <div class="result-box">
+      <div class="label">${r.code} &middot; ${r.label}</div>
+      <div class="value">${sumRow(r, allHoles)}</div>
+    </div>`).join('');
+}
+
+function renderRoundMeta() {
+  document.getElementById('roundName').value = currentRound.name || '';
+  document.getElementById('roundCourse').value = currentRound.course || '';
+  document.getElementById('roundDate').value = currentRound.date || new Date().toISOString().slice(0,10);
+  document.getElementById('roundTee').value = currentRound.tee || '';
+  document.getElementById('fbPurposeful').value = currentRound.feedback.purposeful || '';
+  document.getElementById('fbThreePlus').value = currentRound.feedback.threePlus || '';
+  document.getElementById('fbFrom2').value = currentRound.feedback.from2 || '';
+  document.getElementById('fbFrom1').value = currentRound.feedback.from1 || '';
+  document.getElementById('fbNotes').value = currentRound.feedback.notes || '';
+}
+
+function collectRoundMeta() {
+  currentRound.name = document.getElementById('roundName').value;
+  currentRound.course = document.getElementById('roundCourse').value;
+  currentRound.date = document.getElementById('roundDate').value;
+  currentRound.tee = document.getElementById('roundTee').value;
+  currentRound.feedback.purposeful = document.getElementById('fbPurposeful').value;
+  currentRound.feedback.threePlus = document.getElementById('fbThreePlus').value;
+  currentRound.feedback.from2 = document.getElementById('fbFrom2').value;
+  currentRound.feedback.from1 = document.getElementById('fbFrom1').value;
+  currentRound.feedback.notes = document.getElementById('fbNotes').value;
+}
+
+function renderRound() {
+  renderRoundMeta();
+  renderHoleTable('frontNine', HOLES_FRONT, 'front', 'FRONT 9');
+  renderHoleTable('backNine', HOLES_BACK, 'back', 'BACK 9');
+  renderRoundTotals();
+}
+
+['roundName','roundCourse','roundDate','roundTee','fbPurposeful','fbThreePlus','fbFrom2','fbFrom1','fbNotes'].forEach(id => {
+  document.getElementById(id).addEventListener('input', collectRoundMeta);
+});
+
+document.getElementById('saveRoundBtn').addEventListener('click', () => {
+  collectRoundMeta();
+  if (!currentRound.name) {
+    alert('Add a name before saving.');
+    return;
+  }
+  const rounds = loadRounds();
+  const idx = rounds.findIndex(r => r.id === currentRound.id);
+  if (idx >= 0) rounds[idx] = currentRound; else rounds.push(currentRound);
+  saveRounds(rounds);
+  alert('Round saved.');
+});
+
+document.getElementById('clearRoundBtn').addEventListener('click', () => {
+  if (!confirm('Clear the current round? Unsaved changes will be lost.')) return;
+  currentRound = emptyRound();
+  renderRound();
+});
+
+function renderRoundHistory() {
+  const rounds = loadRounds().slice().sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+  const el = document.getElementById('roundHistoryContent');
+  if (!rounds.length) {
+    el.innerHTML = '<p class="empty-state">No saved rounds yet. Fill out the Round tab and click "Save Round".</p>';
+    return;
+  }
+  const rowsHtml = rounds.map(r => {
+    const totalScore = sumRowForHoles(ROUND_ROWS[2], r.holes, [...HOLES_FRONT, ...HOLES_BACK]);
+    return `<tr data-id="${r.id}">
+      <td>${r.date || ''}</td>
+      <td>${r.name || ''}</td>
+      <td>${r.course || ''}</td>
+      <td>${totalScore}</td>
+      <td><button class="secondary round-load-btn" data-id="${r.id}">Load</button>
+          <button class="danger round-delete-btn" data-id="${r.id}">Delete</button></td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="history-scroll">
+      <table class="history">
+        <thead><tr><th>Date</th><th>Name</th><th>Course</th><th>Score</th><th>Actions</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>`;
+
+  el.querySelectorAll('.round-load-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rounds = loadRounds();
+      const r = rounds.find(x => x.id === btn.dataset.id);
+      if (!r) return;
+      currentRound = r;
+      renderRound();
+      document.querySelector('nav.tabs button[data-tab="round"]').click();
+    });
+  });
+  el.querySelectorAll('.round-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Delete this round?')) return;
+      const rounds = loadRounds().filter(x => x.id !== btn.dataset.id);
+      saveRounds(rounds);
+      renderRoundHistory();
+    });
+  });
+}
+
 renderMeta();
 renderDrills();
+renderRound();
 </script>
 
 </body>
